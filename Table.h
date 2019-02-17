@@ -1,57 +1,119 @@
 #pragma once
+
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <list>
+#include <chrono>
+#include <ctime>
+#include <algorithm>
+#include <cmath>
+
 
 class Table
 {
 public:
-	Table(const char* name);
+	Table(const char* fileName);
 	~Table();
 
-	unsigned int numSuppliers; //РєРѕР»РёС‡РµСЃС‚РІРѕ РїРѕСЃС‚Р°РІС‰РёРєРѕРІ
-	unsigned int numConsumers; //РєРѕР»РёС‡РµСЃС‚РІРѕ РїРѕС‚СЂРµР±РёС‚РµР»РµР№
-	unsigned int numClosed;    //С‡РёСЃР»Рѕ Р·Р°РєСЂС‹С‚С‹С… СЏС‡РµРµРє
+	bool profile; //надо ли на каждой итерации оптимизации выводить результат работы метода
 
-	void FindOptimalStrategy(); //СЂРµС€РµРЅРёРµ Р·Р°РґР°С‡Рё РѕРїС‚РёРјРёР·Р°С†РёРё
+	unsigned int height; //количество поставщиков+1
+	unsigned int width; //количество потребителей+1
 
-	bool isBalancedTask(); //СЏРІР»СЏРµС‚СЃСЏ Р»Рё Р·Р°РґР°С‡Р° СЃР±Р°Р»Р°РЅСЃРёСЂРѕРІР°РЅРЅРѕР№
-	void toBalancedTask(); //РїСЂРёРІРµРґРµРЅРёРµ Рє СЃР±Р°Р»Р°РЅСЃРёСЂРѕРІР°РЅРЅРѕР№
+	void northWestCornerMethod(); //метод северо-западного угла
 
-	int* northWestCornerMethod(unsigned int complication = 0); //РјРµС‚РѕРґ СЃРµРІРµСЂРѕ-Р·Р°РїР°РґРЅРѕРіРѕ СѓРіР»Р°
-	int* minElemMethod() { return nullptr; }    //РјРµС‚РѕРґ РјРёРЅРёРјР°Р»СЊРЅРѕРіРѕ СЌР»РµРјРµРЅС‚Р°
-	int* doublePreference() { return nullptr; } //РјРµС‚РѕРґ РґРІРѕР№РЅРѕРіРѕ РїСЂРµРґРїРѕС‡С‚РµРЅРёСЏ
+    //TO-DO: int* minElemMethod();     //метод минимального элемента
+	//TO-DO: int* doublePreference();  //метод двойного предпочтения
 
-	void printSolution();
+	void saveSolution(); //сохраняем решение в файл
+
+	friend std::ostream& operator << (std::ostream &out, Table &table);   //выводим таблицу в консоль
+	friend std::ofstream& operator << (std::ofstream &out, Table &table); //сохраняем таблицу в файл
+
+	bool isErr()
+	{
+		return err != ERR_OK;
+	}
 
 private:
 	class Node {
 	public:
-		Node() :closed(false)
+		Node() :used(false)
 		{
-			this->_data.value = 0;
+			this->value = 0;
+			this->_data.price = 0;
 		}
 
-		unsigned int price; //С‚Р°СЂРёС„
-
-		union data //СЏ Р±С‹ СЃРєР°Р·Р°Р» СЌС‚Рѕ РЅРµ РЅСѓР¶РЅРѕ, РЅРѕ СЂР°РґРё РїРѕРЅСЏС‚РЅРѕСЃС‚Рё РѕР±РѕР·РЅР°С‡РµРЅРёР№ РґР°РґРёРј РЅР°Рј РЅР°Р·С‹РІР°С‚СЊ РѕРґРёРЅ Рё С‚РѕС‚ Р¶Рµ РєСѓСЃРѕРє РїР°РјСЏС‚Рё РїРѕ-СЂР°Р·РЅРѕРјСѓ
+		unsigned int value; //объём поставки (ячейка матрицы тарифов)
+		bool used;
+		union data //данные инициализации
 		{
-			unsigned int value; //РѕР±СЉС‘Рј РїРѕСЃС‚Р°РІРєРё (СЏС‡РµР№РєР° РјР°С‚СЂРёС†С‹ С‚Р°СЂРёС„РѕРІ)
-			unsigned int cargoAmount; //СЃРєРѕР»СЊРєРѕ РіСЂСѓР·Р° Сѓ РїРѕСЃС‚Р°РІС‰РёРєР° (РЅСѓР»РµРІРѕР№ СЃС‚РѕР»Р±РµС†)
-			unsigned int need; //СЃРєРѕР»СЊРєРѕ РіСЂСѓР·Р° РЅСѓР¶РЅРѕ РїРѕС‚СЂРµР±РёС‚РµР»СЋ (РЅСѓР»РµРІР°СЏ СЃС‚СЂРѕРєР°)
+			unsigned int price; //тариф
+			unsigned int cargoAmount; //количество груза у поставщика (нулевой столбец)
+			unsigned int need; //сколько нужно потребителю (нулевая строка)
 		};
 
-		data _data; 
-		bool closed; //Р·Р°РєСЂС‹С‚Р° СЏС‡РµР№РєР° РёР»Рё РЅРµС‚
+		data _data;
+		
 
 		friend std::ifstream& operator >> (std::ifstream &in, Node &node)
 		{
-			in >> node.price;
+			in >> node._data.price;
+			return in;
 		}
 	};
 
-	Node** table; //РёСЃРїРѕР»СЊР·СѓРµРј РјР°СЃСЃРёРІС‹ РїРѕС‚РѕРјСѓ С‡С‚Рѕ СЂРµР°Р»Р»РѕРєРѕРІ Р±СѓРґРµС‚ РјР°Р»Рѕ (РєР°Рє РјР°РєСЃРёРјСѓРј РѕРґРёРЅ), Р° РґРѕСЃС‚СѓРї РЅСѓР¶РµРЅ С‡Р°СЃС‚Рѕ Рё Р±С‹СЃС‚СЂРѕ
+	class ChainOfRecalc //цепь пересчёта
+	{
 
-	std::list<int> solution; //СЂРµС€РµРЅРёРµ РІ С„РѕСЂРјР°С‚Рµ СЃРєРѕР»СЊРєРѕ РѕС‚РєСѓРґР° РєСѓРґР°
+	};
+
+	class Log //логгер
+	{
+		const char* logDirDef = "log.txt";
+	public:
+
+		std::ofstream report()
+		{
+			std::ofstream out;
+			out.open(logDirDef, std::ios::app);
+
+			time_t now = time(NULL);
+			char str[26];
+			ctime_s(str, sizeof(str), &now);
+			out << "---" << str << ">";
+			return out;
+		}
+	};
+
+	enum ERROR
+	{
+		ERR_OK,
+		ERR_SIZE,
+		ERR_PARAM
+	};
+
+	ERROR err;
+
+	Log log;
+
+	const char* saveDirDef = "out.txt";
+
+	Node** table; //используем массивы потому что реаллоков будет мало (как максимум один), а доступ нужен часто и быстро
+
+	std::list<int> solution; //решение в формате сколько откуда куда
+
+	int isBalancedTask(); //является ли задача сбалансированной
+	void toBalancedTask(int diff); //приведение к сбалансированной, in: разность между суммарным грузом и суммарной нуждой
+
+	void AddColumn(int addNeed); //добавляем фиктивного потребетеля
+	//TO-DO: void AddColumn(int addNeed, unsigned int j); //добавляем фиктивного потребетеля в определённое место таблицы (нужно для 4го усложения)
+
+	void AddLine(int addCargo);  //добавляем фиктивного поставщика
+	//TO-DO: void AddLine(int addCargo, unsigned int i);  //добавляем фиктивного потсавщика в определённое место таблицы (нужно для 4го усложения)
+
+	Node** copyTable(); //копирование таблицы (ТОЛЬКО РАЗМЕРОВ height на width!!!)
+
+	void clearTable(Node**); //удаление таблицы (ТОЛЬКО РАЗМЕРОВ height на width!!!)
 };
