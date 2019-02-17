@@ -137,10 +137,18 @@ void Table::northWestCornerMethod()
 
 	while (check != width + height - 1)//one iteration of the algorithm
 	{
-		table[i][j].value = std::min(table[0][j]._data.need, table[i][0]._data.cargoAmount); //we transport either everything that is, or we transport everything that is needed
+		unsigned int min = std::min(table[0][j]._data.need, table[i][0]._data.cargoAmount);
+		table[i][j].value = min; //we transport either everything that is, or we transport everything that is needed
 		table[i][j].used = true;
+		table[0][j]._data.need -= min; //need diminished
+		table[i][0]._data.cargoAmount -= min; //load diminished
 
-		if (table[i][j].value == table[0][j]._data.need == table[i][0]._data.cargoAmount)//if the demand is fully satisfied and there is no cargo left, then by default the fictitious zero is drawn to the left
+		//now this cell is the part of solution
+		solution.push_back(min); 
+		solution.push_back(j);
+		solution.push_back(i);
+
+		if (table[0][j]._data.need == 0 && table[i][0]._data.cargoAmount == 0)//if the demand is fully satisfied and there is no cargo left, then by default the fictitious zero is drawn to the left
 		{
 			if (j < width - 1) //is there still cell on the right
 				table[i][j + 1].used = true;
@@ -148,25 +156,29 @@ void Table::northWestCornerMethod()
 				table[i + 1][j].used = true;
 			else //if none of this is done, then the algorithm has reached the bottom right edge and ended
 				break;
+
+			//diagonal jump
+			i++;
+			j++;
 		}
-		else if (table[i][j].value == table[0][j]._data.need) //if the demand is satisfied, then move to the right
+		else if (table[0][j]._data.need == 0) //if the demand is satisfied, then move to the right
 			if (j < width - 1) //move right if there is cell
 				j++;
 			else //if there is no place, and we have already satisfied all the demand, then something has gone wrong
 				log.report() << "smth strange happens on [" << i << ", " << j << "] elem in table: " << std::endl << *this << std::endl;
-		else if (table[i][j].value == table[i][0]._data.need) //the whole load is taken out, then we move down
+		else if (table[i][0]._data.cargoAmount == 0) //the whole load is taken out, then we move down
 			if (i < height - 1) //move down if there is cell
 				i++;
 			else //if there is no space below, and we have already taken out the entire load, then something has gone wrong
 				log.report() << "smth strange happens on [" << i << ", " << j << "] elem in table: " << std::endl << *this << std::endl;
 		
 		if (profile)
-			log.report() << "PROFILE_STEP " << check << *this << std::endl;
+			log.report() << "PROFILE_STEP " << check << std::endl << *this << std::endl;
 
 		check++;
 	}
 
-
+	clearTable(saveTable);
 
 
 	auto end = std::chrono::system_clock::now();
@@ -194,7 +206,12 @@ void Table::saveSolution()
 
 	for (auto it = solution.begin(); it != solution.end(); it++)
 	{
-		out << "Send " << (*it)++ << " cargo from " << (*it)++ << " to " << *it;
+		auto it1 = it;
+		it1++;
+		auto it2 = it1;
+		it2++;
+		out << "Send " << (*it) << " cargo from " << *(it1)<< " to " << *(it2) << "; ";
+		it = it2;
 	}
 	out << std::endl << "_______end_solution_______" << std::endl;
 	out.close();
@@ -255,12 +272,13 @@ std::ofstream& operator << (std::ofstream &out, Table &table)
 Table::Node** Table::copyTable()
 {
 	Node** t = new Node*[height];
-	for (int i = 0; i < height; i++)
+	for (unsigned int i = 0; i < height; i++)
 	{
 		t[i] = new Node[width];
-		for (int j = 0; j < width; j++)
+		for (unsigned int j = 0; j < width; j++)
 			t[i][j] = table[i][j];
 	}
+	return t;
 }
 
 void Table::clearTable(Table::Node** t)
@@ -269,8 +287,8 @@ void Table::clearTable(Table::Node** t)
 	{
 		for (unsigned int i = 0; i < height; i++)
 		{
-			delete[] table[i];
+			delete[] t[i];
 		}
-		delete[] table;
+		delete[] t;
 	}
 }
