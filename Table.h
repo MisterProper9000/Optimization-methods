@@ -16,20 +16,20 @@ public:
 	Table(const char* fileName);
 	~Table();
 
-	bool profile; //надо ли на каждой итерации оптимизации выводить результат работы метода
+	bool profile; //is there need to output the result of the method operation at each optimization iteration
 
-	unsigned int height; //количество поставщиков+1
-	unsigned int width; //количество потребителей+1
+	unsigned int height; //number of suppliers+1
+	unsigned int width; //number of consumers+1
 
-	void northWestCornerMethod(); //метод северо-западного угла
+	void northWestCornerMethod(); //northwest corner method
 
-    //TO-DO: int* minElemMethod();     //метод минимального элемента
-	//TO-DO: int* doublePreference();  //метод двойного предпочтения
+    //TO-DO: int* minElemMethod();     //minimum element method
+	//TO-DO: int* dualPreference();  //dual preference method
 
-	void saveSolution(); //сохраняем решение в файл
+	void saveSolution(); //save the solution to a file
 
-	friend std::ostream& operator << (std::ostream &out, Table &table);   //выводим таблицу в консоль
-	friend std::ofstream& operator << (std::ofstream &out, Table &table); //сохраняем таблицу в файл
+	friend std::ostream& operator << (std::ostream &out, Table &table);   //display table in console
+	friend std::ofstream& operator << (std::ofstream &out, Table &table); //save the table to a file
 
 	bool isErr()
 	{
@@ -45,13 +45,13 @@ private:
 			this->_data.price = 0;
 		}
 
-		unsigned int value; //объём поставки (ячейка матрицы тарифов)
+		unsigned int value; //scope of delivery (tariff matrix cell)
 		bool used;
-		union data //данные инициализации
+		union data //initialization data
 		{
-			unsigned int price; //тариф
-			unsigned int cargoAmount; //количество груза у поставщика (нулевой столбец)
-			unsigned int need; //сколько нужно потребителю (нулевая строка)
+			unsigned int price; //tariff
+			unsigned int cargoAmount; //the amount of cargo at the supplier (zero column)
+			unsigned int need; //how much the consumer needs (zero line)
 		};
 
 		data _data;
@@ -64,12 +64,12 @@ private:
 		}
 	};
 
-	class ChainOfRecalc //цепь пересчёта
+	class ChainOfRecalc //conversion chain
 	{
 
 	};
 
-	class Log //логгер
+	class Log //logger
 	{
 		const char* logDirDef = "log.txt";
 	public:
@@ -100,20 +100,20 @@ private:
 
 	const char* saveDirDef = "out.txt";
 
-	Node** table; //используем массивы потому что реаллоков будет мало (как максимум один), а доступ нужен часто и быстро
+	Node** table; //We use arrays because there will be few reallocs (at most one), and access is needed often and quickly
 
-	std::list<int> solution; //решение в формате сколько откуда куда
+	std::list<int> solution; //solution in the format how much/from where/to where
 
-	int isBalancedTask(); //является ли задача сбалансированной
-	void toBalancedTask(int diff); //приведение к сбалансированной, in: разность между суммарным грузом и суммарной нуждой
+	int isBalancedTask(); //is the task balanced
+	void toBalancedTask(int diff); //reduction to balanced, in: difference between total load and total need
 
-	void AddColumn(int addNeed); //добавляем фиктивного потребетеля
-	//TO-DO: void AddColumn(int addNeed, unsigned int j); //добавляем фиктивного потребетеля в определённое место таблицы (нужно для 4го усложения)
+	void AddColumn(int addNeed); //add fictitious consumer
+	//TO-DO: void AddColumn(int addNeed, unsigned int j); //add a fictitious consumer to a specific place in the table (needed for the 4th complication)
 
-	void AddLine(int addCargo);  //добавляем фиктивного поставщика
-	//TO-DO: void AddLine(int addCargo, unsigned int i);  //добавляем фиктивного потсавщика в определённое место таблицы (нужно для 4го усложения)
+	void AddLine(int addCargo);  //add fictitious supplier
+	//TO-DO: void AddLine(int addCargo, unsigned int i);  //add a fictitious supplier to a certain place in the table (needed for the 4th complication)
 
-	Node** copyTable(); //копирование таблицы (ТОЛЬКО РАЗМЕРОВ height на width!!!)
+	Node** copyTable(); //copying the table (size ONLY heightXwidth !!!)
 
-	void clearTable(Node**); //удаление таблицы (ТОЛЬКО РАЗМЕРОВ height на width!!!)
+	void clearTable(Node**); //deleting the table (size ONLY heightXwidth !!!)
 };
