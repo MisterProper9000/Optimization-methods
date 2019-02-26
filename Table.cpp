@@ -367,10 +367,12 @@ std::pair<int, int> Table::findNewStartPoint()
 std::vector<std::pair<int, int>> Table::FindChainOfRecalc(std::pair<int, int> newPoint)
 {
 	std::vector<std::pair<int, int>> chain;
+	std::vector<int> tmp;
 	chain.push_back(newPoint);
 	while (true)
 	{
 		int i = 0;
+		tmp = solution;
 		while (true)
 		{
 			i++;
@@ -381,8 +383,12 @@ std::vector<std::pair<int, int>> Table::FindChainOfRecalc(std::pair<int, int> ne
 			}
 			else
 			{
-				chain.push_back(std::pair<int, int>(solution[i], solution[++i]));
+				chain.push_back(std::pair<int, int>(solution[i], solution[i + 1]));
+				solution.erase(solution.begin() + i - 1);
+				solution.erase(solution.begin() + i);
+				solution.erase(solution.begin() + i + 1);
 				newPoint = chain.back();
+				i--;
 				break;
 			}
 			i++;
@@ -393,12 +399,18 @@ std::vector<std::pair<int, int>> Table::FindChainOfRecalc(std::pair<int, int> ne
 			}
 			else
 			{
-				chain.push_back(std::pair<int, int>(solution[i-1], solution[i++]));
+				chain.push_back(std::pair<int, int>(solution[i-1], solution[i]));
+				solution.erase(solution.begin() + i - 2);
+				solution.erase(solution.begin() + i - 1);
+				solution.erase(solution.begin() + i);
 				newPoint = chain.back();
+				i -= 2;
 				break;
 			}
 			
 		}
+
+		solution = tmp;
 
 		if (newPoint.first = chain[0].first && newPoint.second == chain[0].second)
 			break;
