@@ -39,7 +39,7 @@ Table::Table(const char* fileName)
 
 Table::~Table()
 {
-	log.report() << "______shutdown______" << std::endl;
+	log.report() << "______shutdown______\n" << std::endl;
 	clearTable(table);
 }
 
@@ -135,6 +135,8 @@ void Table::northWestCornerMethod()
 	int check = 0;
 	unsigned int i = 1, j = 1;
 
+
+
 	while (check != width + height - 1)//one iteration of the algorithm
 	{
 		unsigned int min = std::min(table[0][j]._data.need, table[i][0]._data.cargoAmount);
@@ -145,8 +147,8 @@ void Table::northWestCornerMethod()
 
 		//now this cell is the part of solution
 		solution.push_back(min); 
-		solution.push_back(j);
 		solution.push_back(i);
+		solution.push_back(j);
 
 		if (table[0][j]._data.need == 0 && table[i][0]._data.cargoAmount == 0)//if the demand is fully satisfied and there is no cargo left, then by default the fictitious zero is drawn to the left
 		{
@@ -176,6 +178,12 @@ void Table::northWestCornerMethod()
 			log.report() << "PROFILE_STEP " << check << std::endl << *this << std::endl;
 
 		check++;
+	}
+	std::pair<int, int> tmp;
+	while ((tmp = findNewStartPoint()).first != -1)
+	{
+		std::vector<std::pair<int, int>> chain = FindChainOfRecalc(tmp);
+		//Now we have to check some optimizational shit
 	}
 
 	clearTable(saveTable);
@@ -291,4 +299,109 @@ void Table::clearTable(Table::Node** t)
 		}
 		delete[] t;
 	}
+}
+
+std::pair<int, int> Table::findNewStartPoint()
+{
+	std::vector<std::pair<int, bool>> u;
+	std::vector<std::pair<int, bool>> v;
+	std::vector<std::pair<int, int>> stack;
+
+	for (int i = 1; i < height; i++)
+	{
+		u.push_back(std::pair<int, bool>(0,false));
+	}
+	for (int i = 1; i < width; i++)
+	{
+		v.push_back(std::pair<int, bool>(0, false));
+	}
+	u[0].first = 0;
+	u[0].second = true;
+	
+	for (int j = 1; j < width; j++)
+	{
+		if (table[0][j].used)
+		{
+			v[j].first = u[0].first - table[0][j]._data.price;
+			v[j].second = true;
+			stack.push_back(std::pair<int, int>(0,j));
+		}
+	}
+
+	while (stack.size != 0)
+	{
+		std::pair<int, int> a = stack.back();
+		stack.pop_back();
+		for (int i = 1; i < height; i++)
+		{
+			if (!table[i][a.second].used) continue; //если клетка не юазалась то идём дальше
+			if (u[i].second) continue; //если уже вычислили то погнали дальше
+			u[i].first = table[i][a.second]._data.price + v[a.second].first;
+			u[i].second = true;
+			stack.push_back(std::pair<int, int>(i, a.second));
+		}
+		for (int j = 1; j < width; j++)
+		{
+			if (!table[a.first][j].used) continue; //если клетка не юазалась то идём дальше
+			if (v[j].second) continue; //если уже вычислили то погнали дальше
+			v[j].first = u[a.first].first - table[a.first][j]._data.price;
+			v[j].second = true;
+			stack.push_back(std::pair<int, int>(a.first, j));
+		}
+	}
+
+	for (int i = 1; i < height; i++)
+	{
+		for (int j = 1; j < width; j++)
+		{
+			if (!table[i][j].used)
+			{
+				if (table[i][j]._data.price < u[i].first - v[j].first)
+					return std::pair<int,int>(i,j);					
+			}
+		}
+	}
+	return std::pair<int, int>(-1, -1);
+}
+
+std::vector<std::pair<int, int>> Table::FindChainOfRecalc(std::pair<int, int> newPoint)
+{
+	std::vector<std::pair<int, int>> chain;
+	chain.push_back(newPoint);
+	while (true)
+	{
+		int i = 0;
+		while (true)
+		{
+			i++;
+			if (newPoint.first != solution[i])
+			{
+				i++;
+				continue;
+			}
+			else
+			{
+				chain.push_back(std::pair<int, int>(solution[i], solution[++i]));
+				newPoint = chain.back();
+				break;
+			}
+			i++;
+			if (newPoint.second != solution[i])
+			{
+				i++;
+				continue;
+			}
+			else
+			{
+				chain.push_back(std::pair<int, int>(solution[i-1], solution[i++]));
+				newPoint = chain.back();
+				break;
+			}
+			
+		}
+
+		if (newPoint.first = chain[0].first && newPoint.second == chain[0].second)
+			break;
+	}
+	return chain;
 }

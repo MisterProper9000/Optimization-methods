@@ -4,6 +4,7 @@
 #include <fstream>
 #include <string>
 #include <list>
+#include <vector>
 #include <chrono>
 #include <ctime>
 #include <algorithm>
@@ -64,11 +65,6 @@ private:
 		}
 	};
 
-	class ChainOfRecalc //conversion chain
-	{
-
-	};
-
 	class Log //logger
 	{
 		const char* logDirDef = "log.txt";
@@ -100,9 +96,9 @@ private:
 
 	const char* saveDirDef = "out.txt";
 
-	Node** table; //We use arrays because there will be few reallocs (at most one), and access is needed often and quickly
+	Node** table; //use arrays because there will be a few reallocs (at most one), and access is needed often and quickly
 
-	std::list<int> solution; //solution in the format how much/from where/to where
+	std::vector<int> solution; //solution in the format how much/from where/to where
 
 	int isBalancedTask(); //is the task balanced
 	void toBalancedTask(int diff); //reduction to balanced, in: difference between total load and total need
@@ -116,4 +112,8 @@ private:
 	Node** copyTable(); //copying the table (size ONLY heightXwidth !!!)
 
 	void clearTable(Node**); //deleting the table (size ONLY heightXwidth !!!)
+
+	std::pair<int, int> findNewStartPoint();
+
+	std::vector<std::pair<int,int>> FindChainOfRecalc(std::pair<int, int> newPoint);
 };
