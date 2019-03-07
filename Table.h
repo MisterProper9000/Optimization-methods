@@ -36,7 +36,10 @@ public:
 	{
 		return err != ERR_OK;
 	}
-
+	
+	//ADDED BY: Ivan Yangildin
+	//////////////////////////
+	void potentialsMethod();
 private:
 	class Node {
 	public:
@@ -116,4 +119,34 @@ private:
 	std::pair<int, int> findNewStartPoint();
 
 	std::vector<std::pair<int,int>> FindChainOfRecalc(std::pair<int, int> newPoint);
+
+	//ADDED BY: Ivan Yangildin
+	//////////////////////////
+
+	//solve the system of equalities for potentials
+	std::pair<int*, int*> findPotentials();
+
+	//find a point wich brings to false inequality
+	std::pair<int, int> findFirstPoint(int* u, int* v);
+
+	//find chain of recalculation
+	bool FindChain(std::pair<int, int> point, std::list<std::pair<int, int>>& chain, bool parity);
+
+	//make new solution
+	void Rebalance(std::list<std::pair<int, int>>& chain);
+
+	//true if we can use cell for chain of recalculation
+	bool is_useable(std::pair<int, int> point, std::list<std::pair<int, int>>& chain);
+
 };
+
+
+
+struct equality
+{
+	int v_num;
+	int u_num;
+	unsigned int result;
+};
+void find_solut_rec_v(int num, int* v, int* u, std::list<equality> equ_list);
+void find_solut_rec_u(int num, int* v, int* u, std::list<equality> equ_list);

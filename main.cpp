@@ -9,6 +9,10 @@ int main()
 	table.profile = true;
 	std::cout << table << std::endl;
 	table.northWestCornerMethod();
+
+	table.potentialsMethod();
+
+	std::cout << table << std::endl;
 	table.saveSolution();
 	return 0;
 }

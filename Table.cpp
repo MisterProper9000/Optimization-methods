@@ -328,7 +328,7 @@ std::pair<int, int> Table::findNewStartPoint()
 		}
 	}
 
-	while (stack.size != 0)
+	while (stack.size() != 0)
 	{
 		std::pair<int, int> a = stack.back();
 		stack.pop_back();
@@ -356,7 +356,7 @@ std::pair<int, int> Table::findNewStartPoint()
 		{
 			if (!table[i][j].used)
 			{
-				if (table[i][j]._data.price < u[i].first - v[j].first)
+				if (table[i][j]._data.price < u[i-1].first - v[j-1].first)
 					return std::pair<int,int>(i,j);					
 			}
 		}
@@ -416,4 +416,215 @@ std::vector<std::pair<int, int>> Table::FindChainOfRecalc(std::pair<int, int> ne
 			break;
 	}
 	return chain;
+}
+
+//ADDED BY: Ivan Yangildin
+//////////////////////////
+
+//some useful functions
+
+//find next var connected by equality with u[num]
+std::list<equality>::iterator find_next_v(int num, std::list<equality>* equ_list)
+{
+	std::list<equality>::iterator it;
+	for (it = equ_list->begin(); it != equ_list->end(); it++) {
+		if (it->v_num == num)
+			return it;
+	}
+	return it;
+}
+//find next var connected by equality with v[num]
+std::list<equality>::iterator find_next_u(int num, std::list<equality>* equ_list)
+{
+	std::list<equality>::iterator it;
+	for (it = equ_list->begin(); it != equ_list->end(); it++) {
+		if (it->u_num == num)
+			return it;
+
+	}
+	return it;
+}
+//find solution of system if v[num] is found
+void find_solut_rec_v(int num, int* v, int* u, std::list<equality> equ_list) 
+{
+	std::list<equality>::iterator it;
+	while (true)
+	{
+		it = find_next_v(num, &equ_list);
+		if (it == equ_list.end())
+			return;
+		equality equ = *it;
+		equ_list.erase(it);
+		int u_num = equ.u_num;
+		u[u_num] = v[num] - equ.result;
+		find_solut_rec_u(u_num, v, u, equ_list);
+	}
+}
+//find solution of system if u[num] is found
+void find_solut_rec_u(int num, int* v, int* u, std::list<equality> equ_list)
+{
+	std::list<equality>::iterator it;
+	while (true)
+	{
+		it = find_next_u(num, &equ_list);
+		if (it == equ_list.end())
+			return;
+		equality equ = *it;
+		equ_list.erase(it);
+		int v_num = equ.v_num;
+		v[v_num] = u[num] + equ.result;
+		find_solut_rec_v(v_num, v, u, equ_list);
+
+	}
+}
+//find the middle of the list
+std::list<std::pair<int, int>>::iterator mean_iter(std::list<std::pair<int, int>>& chain) {
+	std::list<std::pair<int, int>>::iterator it = chain.begin();
+	for (int i = 0; i < chain.size()/2; i++)
+		it++;
+	return it;
+}
+
+std::pair<int*, int*> Table::findPotentials() {
+	int* v = new int[height - 1];
+	int* u = new int[width - 1];
+	std::list<equality> equ_list;
+	for (int i = 1; i < height; i++)
+		for (int j = 1; j < width; j++)
+		{
+			if (table[i][j].used)
+			{
+				equ_list.push_back({ i - 1, j - 1, table[i][j]._data.price });
+			}
+		}
+	v[0] = 0;
+	find_solut_rec_v(0, v, u, equ_list);
+	//for (int i = 0; i < height - 1; i++) printf("%i ", v[i]); printf("\n");
+	//for (int i = 0; i < width - 1; i++) printf("%i ", u[i]); printf("\n");
+	return std::pair<int*, int*>(v, u);
+}
+std::pair<int, int> Table::findFirstPoint(int* v, int* u)
+{
+	for (int i = 1; i < height; i++)
+		for (int j = 1; j < width; j++)
+		{
+			if (v[i-1] - u[j-1] > (int) table[i][j]._data.price)
+				return std::pair<int, int>(i, j); 
+		}
+	return std::pair<int, int>(-1, -1);
+}
+
+bool Table::is_useable(std::pair<int, int> point, std::list<std::pair<int, int>>& chain) {
+	if (!table[point.first][point.second].used)
+		return false;
+	std::list<std::pair<int, int>>::iterator it = std::find(chain.begin(), chain.end(), point);
+	if (it != chain.end())
+		return false;
+	return true;
+}
+
+bool Table::FindChain(std::pair<int, int> point, std::list<std::pair<int, int>>& chain, bool parity) {
+	int line = point.first;
+	int column = point.second;
+	if (table[line][column].used)
+	{
+		chain.insert(mean_iter(chain), point);
+		return true;
+	}
+
+	for (int i = 1; i < height; i++)
+	{
+		if (i == line) continue;
+		for (int j = 1; j < width; j++)
+		{
+			if (j == column) continue;
+			std::pair<int, int> point_a(line, j);
+			std::pair<int, int> point_x(i, j);
+			std::pair<int, int> point_b(i, column);
+
+			if (is_useable(point_a, chain) && is_useable(point_b, chain))
+			{
+				if (parity){
+					chain.insert(mean_iter(chain), point_a);
+					chain.insert(mean_iter(chain), point_b);
+				}
+				else{
+					chain.insert(mean_iter(chain), point_b);
+					chain.insert(mean_iter(chain), point_a);
+				}
+				if (FindChain(point_x, chain, !parity)) return true;
+				else
+				{
+					chain.remove(point_a);
+					chain.remove(point_b);
+				}
+			}
+		}
+	}
+
+	return false;
+}
+void Table::Rebalance(std::list<std::pair<int, int>>& chain)
+{
+	std::list<std::pair<int, int>>::iterator it, it_min;
+	int i, j, dzet;
+	bool is_first = true, minus = false;
+	for (it = chain.begin(); it != chain.end(); it++)
+	{
+		i = (*it).first;
+		j = (*it).second;
+		if (minus)
+		{
+			if (is_first)
+			{
+				is_first = false;
+				dzet = table[i][j].value;
+				it_min = it;
+			}
+			else
+			{
+				if (dzet > table[i][j].value)
+				{
+					dzet = table[i][j].value;
+					it_min = it;
+				}
+			}
+		}
+		minus = !minus;
+	}
+	minus = false;
+	for (it = chain.begin(); it != chain.end(); it++)
+	{
+		i = (*it).first;
+		j = (*it).second;
+		if (minus)
+		{
+			table[i][j].value -= dzet;
+			if (it == it_min)
+				table[i][j].used = false;
+		}
+		else
+			table[i][j].value += dzet;
+		minus = !minus;
+	}
+	i = (*chain.begin()).first;
+	j = (*chain.begin()).second;
+	table[i][j].used = true;
+}
+void Table::potentialsMethod()
+{
+	while (true)
+	{
+		std::pair<int*, int*> potent = findPotentials();
+		std::pair<int, int> point = findFirstPoint(potent.first, potent.second);
+		if (point.first == -1)
+			return;
+		std::list<std::pair<int, int>> list;
+		bool b = FindChain(point, list, false);
+		list.push_front(point);
+		Rebalance(list);
+		list.clear();
+
+		std::cout << *this << std::endl;
+	}
 }
