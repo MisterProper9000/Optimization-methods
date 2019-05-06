@@ -1,6 +1,7 @@
 #include "Table.h"
 
-Table::Table(const char* fileName)
+//@author MisterProper9000
+Table::Table(const char* fileName):difficulties(nullptr), difN(0)
 {
 	log.report() << "______start_new_session______" << std::endl;
 	err = ERR_OK;
@@ -10,7 +11,7 @@ Table::Table(const char* fileName)
 	table = nullptr;
 
 	std::ifstream in(fileName);
-	
+
 	in >> height >> width;
 
 	if (height <= 1 || width <= 1)
@@ -27,22 +28,24 @@ Table::Table(const char* fileName)
 	{
 		table[i] = new Node[width];
 
-		for (unsigned int j = (i==0)?1:0; j < width; j++)
+		for (unsigned int j = (i == 0) ? 1 : 0; j < width; j++)
 		{
 			in >> table[i][j];
 		}
 	}
 	in.close();
-
+	setDifficulties();
 	toBalancedTask(isBalancedTask());
 }
 
+//@author MisterProper9000
 Table::~Table()
 {
 	log.report() << "______shutdown______\n" << std::endl;
 	clearTable(table);
 }
 
+//@author MisterProper9000
 int Table::isBalancedTask()
 {
 	if (err != ERR_OK)
@@ -59,6 +62,7 @@ int Table::isBalancedTask()
 	return totalCargo - totalNeed;
 }
 
+//@author MisterProper9000
 void Table::toBalancedTask(int diff)
 {
 	if (err != ERR_OK)
@@ -76,6 +80,7 @@ void Table::toBalancedTask(int diff)
 	}
 }
 
+//@author MisterProper9000
 void Table::AddColumn(int addNeed)
 {
 	if (err != ERR_OK)
@@ -88,7 +93,7 @@ void Table::AddColumn(int addNeed)
 		for (unsigned int j = 0; j < width; j++)
 		{
 			balancedTable[i][j] = table[i][j];
-		}		
+		}
 	}
 
 	balancedTable[0][width]._data.need = addNeed;
@@ -99,15 +104,16 @@ void Table::AddColumn(int addNeed)
 	width++;
 }
 
+//@author MisterProper9000
 void Table::AddLine(int addCargo)
 {
 	if (err != ERR_OK)
 		return;
 
-	Node** balancedTable = new Node*[height+1];//add new line
+	Node** balancedTable = new Node*[height + 1];//add new line
 	for (unsigned int i = 0; i < height; i++)
 	{
-		balancedTable[i] = new Node[width]; 
+		balancedTable[i] = new Node[width];
 		for (unsigned int j = 0; j < width; j++)
 		{
 			balancedTable[i][j] = table[i][j];
@@ -123,6 +129,7 @@ void Table::AddLine(int addCargo)
 	height++;
 }
 
+//@author MisterProper9000
 void Table::northWestCornerMethod()
 {
 	if (err != ERR_OK)
@@ -131,7 +138,7 @@ void Table::northWestCornerMethod()
 	Node** saveTable = copyTable(); //here we will store our original table (after all, as we go through the algorithm, we’ll mess up the load and needs
 
 	auto start = std::chrono::system_clock::now();
-	
+
 	int check = 0;
 	unsigned int i = 1, j = 1;
 
@@ -145,8 +152,8 @@ void Table::northWestCornerMethod()
 		table[0][j]._data.need -= min; //need diminished
 		table[i][0]._data.cargoAmount -= min; //load diminished
 
-		//now this cell is the part of solution
-		solution.push_back(min); 
+											  //now this cell is the part of solution
+		solution.push_back(min);
 		solution.push_back(i);
 		solution.push_back(j);
 
@@ -173,7 +180,7 @@ void Table::northWestCornerMethod()
 				i++;
 			else //if there is no space below, and we have already taken out the entire load, then something has gone wrong
 				log.report() << "smth strange happens on [" << i << ", " << j << "] elem in table: " << std::endl << *this << std::endl;
-		
+
 		if (profile)
 			log.report() << "PROFILE_STEP " << check << std::endl << *this << std::endl;
 
@@ -198,13 +205,90 @@ void Table::northWestCornerMethod()
 
 	log.report() << "started computation at " << str
 		<< ">elapsed time: " << elapsed_seconds.count() << "s\n";
-	
+
 }
 
+//@author MisterProper9000
+void Table::setDifficulties()
+{
+	std::cout << "\nWanna make things more complicated??\n y/n" << std::endl;
+	char c = 's';
+	while (c != 'y' || c != 'n')
+	{
+		std::cin >> c;
+		if (c == 'n')
+			return;
+		if (c != 'y')
+			continue;
+		std::cout << "\nInput amount of points, points and cargo amount that have to be delivered\n" << std::endl;
+		std::cin >> difN;
+		delete[] difficulties;
+		difficulties = new int[3 * difN];
+		for (int i = 0; i < 3*difN; i+=3)
+		{
+			std::cin >> difficulties[i] >> difficulties[i+1] >> difficulties[i+2];
+			while (difficulties[i + 2] > table[difficulties[i]][0]._data.cargoAmount)
+			{
+				std::cout << "\n point " << difficulties[i] << " doesn't that amount of cargo, try again and input correct e (less or equal " << table[difficulties[i]][0]._data.cargoAmount <<")\n" << std::endl;
+				std::cin >> difficulties[i + 2];
+			}
+			while (difficulties[i] <= 0 || difficulties[i + 1] <= 0 || difficulties[i + 2] <= 0)
+			{
+				std::cout << "all numbers must be positive! Try again" << std::endl;
+				std::cin >> difficulties[i] >> difficulties[i + 1] >> difficulties[i + 2];
+			}
+			while (difficulties[i + 2] > table[0][difficulties[i+1]]._data.need)
+			{
+				std::cout << "\n point " << difficulties[i+1] << " doesn't need that amount of cargo, try again and input correct e (less or equal " << table[0][difficulties[i]]._data.need << ")\n" << std::endl;
+				std::cin >> difficulties[i + 2];
+			}
+		}
+		for (int i = 0; i < 3*difN; i += 3)
+		{
+			table[0][difficulties[i + 1]]._data.need -= difficulties[i + 2];
+			table[difficulties[i]][0]._data.cargoAmount -= difficulties[i + 2];
+		}
+		break;
+	}
+}
+
+//@author MisterProper9000
+void Table::applyDifficulties()
+{
+	if (difN == 0)
+		return;
+	int i = 0;
+	for (int i = 0; i < solution.size(); i += 3)
+	{
+		for (int j = 0; j < 3 * difN; j += 3)
+		{
+			if (solution[i + 1] == difficulties[j] && solution[i + 2] == difficulties[j + 1])
+			{
+				solution[i] += difficulties[j + 2];
+				difficulties[j + 2] = -1;
+				break;
+			}
+			
+		}
+	}
+	for (int j = 0; j < 3 * difN; j += 3)
+	{
+		if (difficulties[j + 2] != -1)
+		{
+			solution.push_back(difficulties[j + 2]);
+			solution.push_back(difficulties[j]);
+			solution.push_back(difficulties[j + 1]);
+		}
+	}
+}
+
+//@author MisterProper9000
 void Table::saveSolution()
 {
 	if (err != ERR_OK)
 		return;
+
+	applyDifficulties();
 
 	std::ofstream out;
 	out.open(saveDirDef, std::ios::app);
@@ -218,7 +302,7 @@ void Table::saveSolution()
 		it1++;
 		auto it2 = it1;
 		it2++;
-		out << "Send " << (*it) << " cargo from " << *(it1)<< " to " << *(it2) << "; ";
+		out << "Send " << (*it) << " cargo from " << *(it1) << " to " << *(it2) << "; ";
 		it = it2;
 	}
 	out << std::endl << "_______end_solution_______" << std::endl;
@@ -227,6 +311,7 @@ void Table::saveSolution()
 	log.report() << "solution saved to " << saveDirDef << std::endl;
 }
 
+//@author MisterProper9000
 std::ostream& operator << (std::ostream &out, Table &table)
 {
 	if (table.isErr())
@@ -252,6 +337,7 @@ std::ostream& operator << (std::ostream &out, Table &table)
 	return out;
 }
 
+//@author MisterProper9000
 std::ofstream& operator << (std::ofstream &out, Table &table)
 {
 	if (table.isErr())
@@ -269,7 +355,7 @@ std::ofstream& operator << (std::ofstream &out, Table &table)
 		{
 			out << table.table[j][i]._data.price;
 			if (i != 0)
-				out << "/" << table.table[j][i].value << "/" << ((table.table[j][i].used)?"T":"F");
+				out << "/" << table.table[j][i].value << "/" << ((table.table[j][i].used) ? "T" : "F");
 			out << " ";
 		}
 		out << std::endl;
@@ -277,6 +363,7 @@ std::ofstream& operator << (std::ofstream &out, Table &table)
 	return out;
 }
 
+//@author MisterProper9000
 Table::Node** Table::copyTable()
 {
 	Node** t = new Node*[height];
@@ -301,6 +388,7 @@ void Table::clearTable(Table::Node** t)
 	}
 }
 
+//@author MisterProper9000
 std::pair<int, int> Table::findNewStartPoint()
 {
 	std::vector<std::pair<int, bool>> u;
@@ -309,7 +397,7 @@ std::pair<int, int> Table::findNewStartPoint()
 
 	for (int i = 1; i < height; i++)
 	{
-		u.push_back(std::pair<int, bool>(0,false));
+		u.push_back(std::pair<int, bool>(0, false));
 	}
 	for (int i = 1; i < width; i++)
 	{
@@ -317,14 +405,14 @@ std::pair<int, int> Table::findNewStartPoint()
 	}
 	u[0].first = 0;
 	u[0].second = true;
-	
+
 	for (int j = 1; j < width; j++)
 	{
 		if (table[0][j].used)
 		{
 			v[j].first = u[0].first - table[0][j]._data.price;
 			v[j].second = true;
-			stack.push_back(std::pair<int, int>(0,j));
+			stack.push_back(std::pair<int, int>(0, j));
 		}
 	}
 
@@ -356,14 +444,15 @@ std::pair<int, int> Table::findNewStartPoint()
 		{
 			if (!table[i][j].used)
 			{
-				if (table[i][j]._data.price < u[i-1].first - v[j-1].first)
-					return std::pair<int,int>(i,j);					
+				if (table[i][j]._data.price < u[i - 1].first - v[j - 1].first)
+					return std::pair<int, int>(i, j);
 			}
 		}
 	}
 	return std::pair<int, int>(-1, -1);
 }
 
+//@author MisterProper9000
 std::vector<std::pair<int, int>> Table::FindChainOfRecalc(std::pair<int, int> newPoint)
 {
 	std::vector<std::pair<int, int>> chain;
@@ -399,7 +488,7 @@ std::vector<std::pair<int, int>> Table::FindChainOfRecalc(std::pair<int, int> ne
 			}
 			else
 			{
-				chain.push_back(std::pair<int, int>(solution[i-1], solution[i]));
+				chain.push_back(std::pair<int, int>(solution[i - 1], solution[i]));
 				solution.erase(solution.begin() + i - 2);
 				solution.erase(solution.begin() + i - 1);
 				solution.erase(solution.begin() + i);
@@ -407,7 +496,7 @@ std::vector<std::pair<int, int>> Table::FindChainOfRecalc(std::pair<int, int> ne
 				i -= 2;
 				break;
 			}
-			
+
 		}
 
 		solution = tmp;
@@ -445,7 +534,7 @@ std::list<equality>::iterator find_next_u(int num, std::list<equality>* equ_list
 	return it;
 }
 //find solution of system if v[num] is found
-void find_solut_rec_v(int num, int* v, int* u, std::list<equality> equ_list) 
+void find_solut_rec_v(int num, int* v, int* u, std::list<equality> equ_list)
 {
 	std::list<equality>::iterator it;
 	while (true)
@@ -480,7 +569,7 @@ void find_solut_rec_u(int num, int* v, int* u, std::list<equality> equ_list)
 //find the middle of the list
 std::list<std::pair<int, int>>::iterator mean_iter(std::list<std::pair<int, int>>& chain) {
 	std::list<std::pair<int, int>>::iterator it = chain.begin();
-	for (int i = 0; i < chain.size()/2; i++)
+	for (int i = 0; i < chain.size() / 2; i++)
 		it++;
 	return it;
 }
@@ -508,8 +597,8 @@ std::pair<int, int> Table::findFirstPoint(int* v, int* u)
 	for (int i = 1; i < height; i++)
 		for (int j = 1; j < width; j++)
 		{
-			if (v[i-1] - u[j-1] > (int) table[i][j]._data.price)
-				return std::pair<int, int>(i, j); 
+			if (v[i - 1] - u[j - 1] >(int) table[i][j]._data.price)
+				return std::pair<int, int>(i, j);
 		}
 	return std::pair<int, int>(-1, -1);
 }
@@ -544,11 +633,11 @@ bool Table::FindChain(std::pair<int, int> point, std::list<std::pair<int, int>>&
 
 			if (is_useable(point_a, chain) && is_useable(point_b, chain))
 			{
-				if (parity){
+				if (parity) {
 					chain.insert(mean_iter(chain), point_a);
 					chain.insert(mean_iter(chain), point_b);
 				}
-				else{
+				else {
 					chain.insert(mean_iter(chain), point_b);
 					chain.insert(mean_iter(chain), point_a);
 				}

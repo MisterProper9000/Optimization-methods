@@ -16,7 +16,8 @@ class Table
 public:
 	Table(const char* fileName);
 	~Table();
-
+	void setDifficulties();
+	void applyDifficulties();
 	bool profile; //is there need to output the result of the method operation at each optimization iteration
 
 	unsigned int height; //number of suppliers+1
@@ -24,8 +25,8 @@ public:
 
 	void northWestCornerMethod(); //northwest corner method
 
-    //TO-DO: int* minElemMethod();     //minimum element method
-	//TO-DO: int* dualPreference();  //dual preference method
+								  //TO-DO: int* minElemMethod();     //minimum element method
+								  //TO-DO: int* dualPreference();  //dual preference method
 
 	void saveSolution(); //save the solution to a file
 
@@ -36,7 +37,7 @@ public:
 	{
 		return err != ERR_OK;
 	}
-	
+
 	//ADDED BY: Ivan Yangildin
 	//////////////////////////
 	void potentialsMethod();
@@ -59,7 +60,7 @@ private:
 		};
 
 		data _data;
-		
+
 
 		friend std::ifstream& operator >> (std::ifstream &in, Node &node)
 		{
@@ -107,10 +108,10 @@ private:
 	void toBalancedTask(int diff); //reduction to balanced, in: difference between total load and total need
 
 	void AddColumn(int addNeed); //add fictitious consumer
-	//TO-DO: void AddColumn(int addNeed, unsigned int j); //add a fictitious consumer to a specific place in the table (needed for the 4th complication)
+								 //TO-DO: void AddColumn(int addNeed, unsigned int j); //add a fictitious consumer to a specific place in the table (needed for the 4th complication)
 
 	void AddLine(int addCargo);  //add fictitious supplier
-	//TO-DO: void AddLine(int addCargo, unsigned int i);  //add a fictitious supplier to a certain place in the table (needed for the 4th complication)
+								 //TO-DO: void AddLine(int addCargo, unsigned int i);  //add a fictitious supplier to a certain place in the table (needed for the 4th complication)
 
 	Node** copyTable(); //copying the table (size ONLY heightXwidth !!!)
 
@@ -118,7 +119,7 @@ private:
 
 	std::pair<int, int> findNewStartPoint();
 
-	std::vector<std::pair<int,int>> FindChainOfRecalc(std::pair<int, int> newPoint);
+	std::vector<std::pair<int, int>> FindChainOfRecalc(std::pair<int, int> newPoint);
 
 	//ADDED BY: Ivan Yangildin
 	//////////////////////////
@@ -138,6 +139,9 @@ private:
 	//true if we can use cell for chain of recalculation
 	bool is_useable(std::pair<int, int> point, std::list<std::pair<int, int>>& chain);
 
+	//add by MisterProper9000
+	int* difficulties;
+	int difN;
 };
 
 
